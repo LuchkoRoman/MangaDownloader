@@ -117,13 +117,27 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <metadata name="folderBrowserDialog1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>17, 17</value>
-  </metadata>
-  <metadata name="backgroundWorker1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>186, 17</value>
-  </metadata>
-  <metadata name="$this.TrayHeight" type="System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
-    <value>25</value>
-  </metadata>
+  <data name="rtbAbout.Text" xml:space="preserve">
+    <value>Версия v1.05
+
+Данная программа предназначена для скачивания манги с сайтов:
+mintmanga.com, readmanga.me, selfmanga.ru, manga24.ru, mangalib.me, bato.to, mangachan.me, hentai-chan.me и yaoichan.me.
+
+Данная программа имеет открытый исходный код. 
+Автор не несет ответственности за последствия сторонней модификации кода программы.
+Вот ссылка на GitHub автора: https://github.com/devdimit/MangaDownloader. Проект по-видимому заброшен.
+
+Была пара вечеров свободного времени, решил позаниматься некрофилией и оживить проект. Из этого получилась новая, но я думаю что последняя, версия MangaDownloader.
+Так как уже обратил свое внимание на другой проект под названием FMD. И если не пропадет желание и будет свободное время, то выкачу его улучшенную версию, но только уже написанную на .Net
+Вот ссылка на мой GitHub: https://github.com/LuchkoRoman/MangaDownloader. Если кому-то надо.
+
+Список изменений:
+1. Полностью переписан функционал поиска и скачки глав.
+2. Добавлена поддержка пары новых сайтов, ну и соответственно исправлена всех старых.
+3. Добавлена возможность конвертировать главы в cbz.(моя читалка работает только с ним)
+4. Добавлена возможность конвертировать главы в один большой архив cbr или cbz.(лично меня напрягает постоянно открывать новую главу на читалке. Одним большим архивом мне удобнее)
+5. Запоминается путь к папке с мангой(меня бесило постоянно кликать и выбирать папку, при каждом открытии приложения)
+6. Теперь приложение работает и через прокси.(для тех у кого интернет на работе через прокси, как у меня)
+7. Иконку теперь видно в трее.</value>
+  </data>
 </root>

@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("MangaDownloader")]
 [assembly: AssemblyDescription("Программа скачивания манги")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("DevDimit@yandex.ru")]
+[assembly: AssemblyCompany("the_gray_cardinal@tut.by")]
 [assembly: AssemblyProduct("MangaDownloader")]
-[assembly: AssemblyCopyright("Copyright ©  2016")]
+[assembly: AssemblyCopyright("Copyright ©  2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // Можно задать все значения или принять номера сборки и редакции по умолчанию 
 // используя "*", как показано ниже:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.0.0.3")]
-[assembly: AssemblyFileVersion("1.0.0.3")]
+[assembly: AssemblyVersion("1.0.5.1")]
+[assembly: AssemblyFileVersion("1.0.5.1")]
