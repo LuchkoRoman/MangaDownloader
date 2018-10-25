@@ -181,81 +181,95 @@ namespace MangaDownloader
  
         private void DownloadBackgroundWorkerDoWork(object sender, DoWorkEventArgs e)
         {
-           
-            manga_info chapter;
-           
-            string folder_cbr_name;
-            string folder_cbz_name;
-            string globalZipTempFolderName;            
-            string path;
-
-
-            ZipFile globalZip = new ZipFile(); //создание архива
-            globalZip.ProvisionalAlternateEncoding = Encoding.GetEncoding("cp866"); //подключение русского языка
-
-
-            if (Text_way_to_save.Text.IndexOf(@":\") == -1)
+            if (downloadBackgroundWorker.CancellationPending != true)
             {
-                err = 1;
-                downloadBackgroundWorker.ReportProgress(err, "err");//отправление состояния из потока
+                manga_info chapter;
 
-            }
-            else
-            {
-                path = $@"{Text_way_to_save.Text}\{global_name}";
-                path = func_saver.filter_disk_folder(path);
-                Console.WriteLine(path);
+                string folder_cbr_name;
+                string folder_cbz_name;
+                string globalZipTempFolderName;
+                string path;
 
-                DirectoryInfo dirInfo = new DirectoryInfo(path); //создание главной папки
-                if (!dirInfo.Exists)
+
+                ZipFile globalZip = new ZipFile(); //создание архива
+                globalZip.ProvisionalAlternateEncoding = Encoding.GetEncoding("cp866"); //подключение русского языка
+
+
+                if (Text_way_to_save.Text.IndexOf(@":\") == -1)
                 {
-                    dirInfo.Create();
+                    err = 1;
+                    downloadBackgroundWorker.ReportProgress(err, "err"); //отправление состояния из потока
+
                 }
-
-                if ((convert_cbr.Checked || convert_cbr_big.Checked) && dirInfo.GetDirectories().FirstOrDefault(d => d.Name == @"cbr") == null) dirInfo.CreateSubdirectory(@"cbr"); //создана папка для глав cbr
-                folder_cbr_name = $@"{path}\cbr";
-
-                if ((convert_cbz.Checked || convert_cbz_big.Checked) && dirInfo.GetDirectories().FirstOrDefault(d => d.Name == @"cbz") == null) dirInfo.CreateSubdirectory(@"cbz"); //создана папка для глав cbz
-                folder_cbz_name = $@"{path}\cbz";
-
-                globalZipTempFolderName = $@"{path}\GlobalZip";
-                if (convert_cbr_big.Checked || convert_cbz_big.Checked)
+                else
                 {
-                    if (dirInfo.GetDirectories().FirstOrDefault(d => d.Name == @"GlobalZip") != null) DeleteDirectory(globalZipTempFolderName);
+                    path = $@"{Text_way_to_save.Text}\{global_name}";
+                    path = func_saver.filter_disk_folder(path);
+                    Console.WriteLine(path);
 
-                    dirInfo.CreateSubdirectory(@"GlobalZip");
-                }
-
-                List<Task> downloadTasksList = new List<Task>();
-
-                //логика скачивания 
-                foreach (MangaChapterCheckBoxItem selectedChapter in Found_parts.CheckedItems)
-                {
-                    if (downloadBackgroundWorker.CancellationPending != true)
+                    DirectoryInfo dirInfo = new DirectoryInfo(path); //создание главной папки
+                    if (!dirInfo.Exists)
                     {
-                        chapter = arr_mang_inf.First(x => x.id == selectedChapter.Id);
-                        downloadTasksList.Add(ProcessChapterAsync(cancellationTokenSource.Token, chapter, dirInfo, path));
+                        dirInfo.Create();
                     }
 
+                    if ((convert_cbr.Checked || convert_cbr_big.Checked) &&
+                        dirInfo.GetDirectories().FirstOrDefault(d => d.Name == @"cbr") == null)
+                        dirInfo.CreateSubdirectory(@"cbr"); //создана папка для глав cbr
+                    folder_cbr_name = $@"{path}\cbr";
+
+                    if ((convert_cbz.Checked || convert_cbz_big.Checked) &&
+                        dirInfo.GetDirectories().FirstOrDefault(d => d.Name == @"cbz") == null)
+                        dirInfo.CreateSubdirectory(@"cbz"); //создана папка для глав cbz
+                    folder_cbz_name = $@"{path}\cbz";
+
+                    globalZipTempFolderName = $@"{path}\GlobalZip";
+                    if (convert_cbr_big.Checked || convert_cbz_big.Checked)
+                    {
+                        if (dirInfo.GetDirectories().FirstOrDefault(d => d.Name == @"GlobalZip") != null)
+                            DeleteDirectory(globalZipTempFolderName);
+
+                        dirInfo.CreateSubdirectory(@"GlobalZip");
+                    }
+
+                    List<Task> downloadTasksList = new List<Task>();
+
+                    //логика скачивания 
+                    foreach (MangaChapterCheckBoxItem selectedChapter in Found_parts.CheckedItems)
+                    {
+                        if (downloadBackgroundWorker.CancellationPending != true)
+                        {
+                            chapter = arr_mang_inf.First(x => x.id == selectedChapter.Id);
+                            downloadTasksList.Add(ProcessChapterAsync(cancellationTokenSource.Token, chapter, dirInfo,
+                                path));
+                        }
+
+                    }
+
+                    Task.WaitAll(downloadTasksList.ToArray());
+
+                    //добавление изображения в общий архив
+                    if (convert_cbr_big.Checked || convert_cbz_big.Checked)
+                    {
+                        globalZip.AddDirectory(globalZipTempFolderName, @"");
+
+                        if (convert_cbr_big.Checked)
+                            globalZip.Save(
+                                $@"{folder_cbr_name}\{func_saver.filter_globalname(global_name)} ({
+                                        Guid.NewGuid().ToString().Replace("-", string.Empty)
+                                    }).cbr"); //сохранение большого архива cbr
+
+                        if (convert_cbz_big.Checked)
+                            globalZip.Save(
+                                $@"{folder_cbz_name}\{func_saver.filter_globalname(global_name)} ({
+                                        Guid.NewGuid().ToString().Replace("-", string.Empty)
+                                    }).cbz"); //сохранение большого архива cbz
+
+                        DeleteDirectory(globalZipTempFolderName);
+                    }
+
+                   downloadBackgroundWorker.CancelAsync();
                 }
-                Task.WaitAll(downloadTasksList.ToArray());
-
-                //добавление изображения в общий архив
-                if (convert_cbr_big.Checked || convert_cbz_big.Checked)
-                {
-                    var globalZipTempFolder = new DirectoryInfo(globalZipTempFolderName);
-                    globalZipTempFolder.GetFiles().ForEach(x => globalZip.AddFile($@"{globalZipTempFolder}\{x.Name}", @"\"));
-
-                    if (convert_cbr_big.Checked) globalZip.Save($@"{folder_cbr_name}\{func_saver.filter_globalname(global_name) } ({Guid.NewGuid().ToString().Replace("-", string.Empty)}).cbr");//сохранение большого архива cbr
-
-                    if (convert_cbz_big.Checked) globalZip.Save($@"{folder_cbz_name}\{func_saver.filter_globalname(global_name)} ({Guid.NewGuid().ToString().Replace("-", string.Empty)}).cbz");//сохранение большого архива cbz
-
-                    DeleteDirectory(globalZipTempFolderName);
-                };
-
-
-
-                downloadBackgroundWorker.CancelAsync();
             }
         }
 
@@ -758,6 +772,9 @@ namespace MangaDownloader
 
                 About_found.Text = $@"Найдено глав: {ch.Length}";//количество найденых глав
                 MangaNameLbl.Text = $@"{manga_name}";
+                progressBar1.Maximum = 0;
+                progressBar1.Value = 0;
+                status.Text = "Статус ОК. Закачка не производится";
 
 
             }//конец readmanga, minitmanga, и selfmanga
@@ -808,6 +825,9 @@ namespace MangaDownloader
 
                 About_found.Text = $@"Найдено глав: {ch.Length}";//количество найденых глав
                 MangaNameLbl.Text = $@"{manga_name}";
+                progressBar1.Maximum = 0;
+                progressBar1.Value = 0;
+                status.Text = "Статус ОК. Закачка не производится";
 
             }//конец manga24
         }
@@ -857,6 +877,9 @@ namespace MangaDownloader
 
                 About_found.Text = $@"Найдено глав: {ch.Length}";//количество найденых глав
                 MangaNameLbl.Text = $@"{manga_name}";
+                progressBar1.Maximum = 0;
+                progressBar1.Value = 0;
+                status.Text = "Статус ОК. Закачка не производится";
 
 
             }//конец mangachan
@@ -982,6 +1005,9 @@ namespace MangaDownloader
 
                 About_found.Text = $@"Найдено глав: {arr_mang_inf.Count}";//количество найденых глав
                 MangaNameLbl.Text = $@"{manga_name}";
+                progressBar1.Maximum = 0;
+                progressBar1.Value = 0;
+                status.Text = "Статус ОК. Закачка не производится";
 
             }//конец hentaichan
         }
@@ -1032,6 +1058,9 @@ namespace MangaDownloader
 
                 About_found.Text = $@"Найдено глав: {ch.Length}";//количество найденых глав
                 MangaNameLbl.Text = $@"{manga_name}";
+                progressBar1.Maximum = 0;
+                progressBar1.Value = 0;
+                status.Text = "Статус ОК. Закачка не производится";
 
 
             }//конец mangachan
@@ -1088,6 +1117,10 @@ namespace MangaDownloader
                 About_found.Text = $@"Найдено глав: {ch.Length}";//количество найденых глав
                 MangaNameLbl.Text = $@"{manga_name}";
 
+                progressBar1.Maximum = 0;
+                progressBar1.Value = 0;
+                status.Text = "Статус ОК. Закачка не производится";
+
 
             }//конец mangalib
         }
@@ -1140,6 +1173,9 @@ namespace MangaDownloader
 
                 About_found.Text = $@"Найдено глав: {ch.Length}";//количество найденых глав
                 MangaNameLbl.Text = $@"{manga_name}";
+                progressBar1.Maximum = 0;
+                progressBar1.Value = 0;
+                status.Text = "Статус ОК. Закачка не производится";
 
             }//конец bato.to
         }
@@ -1291,6 +1327,7 @@ namespace MangaDownloader
             str = str.Replace(@"|", " ");
             str = str.Replace(@"*", " ");
             str = str.Replace(@"'", " ");
+            str = str.Replace(@"/", " ");
             return str;
         }
 
@@ -1303,7 +1340,7 @@ namespace MangaDownloader
             str = str.Replace(@":", "");
             str = str.Replace(@"|", " ");
             str = str.Replace(@"*", " ");
-            //    str = str.Replace(@"/", " ");
+            str = str.Replace(@"/", " ");
             str = str.Replace(@"'", " ");
             str = str.Insert(1, @":");
             return str;
