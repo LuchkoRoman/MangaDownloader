@@ -212,10 +212,10 @@ namespace MangaDownloader
                     dirInfo.Create();
                 }
 
-                if (convert_cbr.Checked && dirInfo.GetDirectories().FirstOrDefault(d => d.Name == @"cbr") == null) dirInfo.CreateSubdirectory(@"cbr"); //создана папка для глав cbr
+                if ((convert_cbr.Checked || convert_cbr_big.Checked) && dirInfo.GetDirectories().FirstOrDefault(d => d.Name == @"cbr") == null) dirInfo.CreateSubdirectory(@"cbr"); //создана папка для глав cbr
                 folder_cbr_name = $@"{path}\cbr";
 
-                if (convert_cbz.Checked && dirInfo.GetDirectories().FirstOrDefault(d => d.Name == @"cbz") == null) dirInfo.CreateSubdirectory(@"cbz"); //создана папка для глав cbz
+                if ((convert_cbz.Checked || convert_cbz_big.Checked) && dirInfo.GetDirectories().FirstOrDefault(d => d.Name == @"cbz") == null) dirInfo.CreateSubdirectory(@"cbz"); //создана папка для глав cbz
                 folder_cbz_name = $@"{path}\cbz";
 
                 globalZipTempFolderName = $@"{path}\GlobalZip";
@@ -226,7 +226,7 @@ namespace MangaDownloader
                     dirInfo.CreateSubdirectory(@"GlobalZip");
                 }
 
-                List<Task> downloadTasksList= new List<Task>();
+                List<Task> downloadTasksList = new List<Task>();
 
                 //логика скачивания 
                 foreach (MangaChapterCheckBoxItem selectedChapter in Found_parts.CheckedItems)
@@ -238,15 +238,11 @@ namespace MangaDownloader
                     }
 
                 }
-               Task.WhenAll(downloadTasksList);
+                Task.WaitAll(downloadTasksList.ToArray());
 
                 //добавление изображения в общий архив
                 if (convert_cbr_big.Checked || convert_cbz_big.Checked)
                 {
-                    down_paret_now.Text = "Скачиваемая глава: Закачка не производится";
-                    status.Text = "Создание большого архива";
-                    display_link.Text = "Ссылка на закачиваемую страницу: Закачка не производится";
-
                     var globalZipTempFolder = new DirectoryInfo(globalZipTempFolderName);
                     globalZipTempFolder.GetFiles().ForEach(x => globalZip.AddFile($@"{globalZipTempFolder}\{x.Name}", @"\"));
 
@@ -321,7 +317,7 @@ namespace MangaDownloader
 
                         foreach (var item in chapterDir.GetFiles())
                         {
-                            item.CopyTo($@"{path}\GlobalZip\{chapter.sub_name}-{item.Name}", true);
+                            item.CopyTo($@"{path}\GlobalZip\{func_saver.convert_number_page(chapter.chapterNumber)}-{item.Name}", true);
                         }
                     }
 
@@ -741,6 +737,7 @@ namespace MangaDownloader
 
                 status.Text = "Получение списка глав со всеми страницами";
                 arr_mang_inf = new List<manga_info>();//создание списка объектов -глав
+                var chepterCount = ch.Length;
                 ch.Each(x =>
                 {
                     progressBar1.Value = urlCount;
@@ -751,8 +748,11 @@ namespace MangaDownloader
                     arr_mang_inf.Add(new manga_info(ch_url,
                         func_saver.filter_nowindows_symbols(manga_name),
                         $@"{sn} ({guid.ToString().Replace("-", string.Empty)})",
-                        guid, readmanga_ii
+                        guid,
+                        chepterCount,
+                        readmanga_ii
                         )); ;//добавление глав в лист arr_mang_inf
+                    chepterCount--;
                     Found_parts.Items.Add(new MangaChapterCheckBoxItem($@"{sn}", guid), true);//добавление глав в chekbox found_parts
                 });
 
@@ -787,6 +787,7 @@ namespace MangaDownloader
                 status.Text = "Получение списка глав со всеми страницами";
 
                 arr_mang_inf = new List<manga_info>();//создание списка объектов -глав
+                var chepterCount = ch.Length;
                 ch.Each(x =>
                 {
                     progressBar1.Value = urlCount;
@@ -798,9 +799,11 @@ namespace MangaDownloader
                         func_saver.filter_nowindows_symbols(manga_name),
                         $@"{sn} ({guid.ToString().Replace("-", string.Empty)})",
                         guid,
+                        chepterCount,
                         manga24_ii
                     )); ;//добавление глав в лист arr_mang_inf
                     Found_parts.Items.Add(new MangaChapterCheckBoxItem($@"{sn}", guid), true);//добавление глав в chekbox found_parts
+                    chepterCount--;
                 });
 
                 About_found.Text = $@"Найдено глав: {ch.Length}";//количество найденых глав
@@ -833,6 +836,7 @@ namespace MangaDownloader
                 status.Text = "Получение списка глав со всеми страницами";
 
                 arr_mang_inf = new List<manga_info>();//создание списка объектов -глав
+                var chepterCount = ch.Length;
                 ch.Each(x =>
                 {
                     progressBar1.Value = urlCount;
@@ -844,9 +848,11 @@ namespace MangaDownloader
                         func_saver.filter_nowindows_symbols(manga_name),
                         $@"{sn} ({guid.ToString().Replace("-", string.Empty)})",
                         guid,
+                        chepterCount,
                         mangachan_ii
                     )); ;//добавление глав в лист arr_mang_inf
                     Found_parts.Items.Add(new MangaChapterCheckBoxItem($@"{sn}", guid), true);//добавление глав в chekbox found_parts
+                    chepterCount--;
                 });
 
                 About_found.Text = $@"Найдено глав: {ch.Length}";//количество найденых глав
@@ -896,6 +902,7 @@ namespace MangaDownloader
                         func_saver.filter_nowindows_symbols(manga_name),
                         func_saver.filter_nowindows_symbols($@"{manga_name} ({guid.ToString().Replace("-", string.Empty)})"),
                         guid,
+                        1,
                         hentaichan_ii
                     ));
                     Found_parts.Items.Add(new MangaChapterCheckBoxItem(manga_name, guid), true);//добавление глав в chekbox found_parts
@@ -914,6 +921,7 @@ namespace MangaDownloader
                     progressBar1.Maximum = ch.Length;
                     progressBar1.Value = 0;
                     status.Text = "Получение списка глав со всеми страницами";
+                    var chepterCount = 1;
 
                     ch.Each(x =>
                     {
@@ -927,10 +935,12 @@ namespace MangaDownloader
                             func_saver.filter_nowindows_symbols(manga_name),
                             $@"{sn} ({guid.ToString().Replace("-", string.Empty)})",
                             guid,
+                            chepterCount,
                           hentaichan_ii
                         )); //добавление глав в лист arr_mang_inf
 
                         Found_parts.Items.Add(new MangaChapterCheckBoxItem($@"{sn}", guid), true);//добавление глав в chekbox found_parts
+                        chepterCount++;
                     });
 
                     ////сложный способ получения всех глав
@@ -1001,6 +1011,7 @@ namespace MangaDownloader
                 status.Text = "Получение списка глав со всеми страницами";
 
                 arr_mang_inf = new List<manga_info>();//создание списка объектов -глав
+                var chepterCount = ch.Length;
                 ch.Each(x =>
                 {
                     progressBar1.Value = urlCount;
@@ -1012,9 +1023,11 @@ namespace MangaDownloader
                         func_saver.filter_nowindows_symbols(manga_name),
                         $@"{sn} ({guid.ToString().Replace("-", string.Empty)})",
                         guid,
+                        chepterCount,
                         yaoichan_ii
                     )); ;//добавление глав в лист arr_mang_inf
                     Found_parts.Items.Add(new MangaChapterCheckBoxItem($@"{sn}", guid), true);//добавление глав в chekbox found_partss
+                    chepterCount--;
                 });
 
                 About_found.Text = $@"Найдено глав: {ch.Length}";//количество найденых глав
@@ -1053,6 +1066,7 @@ namespace MangaDownloader
                 status.Text = "Получение списка глав со всеми страницами";
 
                 arr_mang_inf = new List<manga_info>();//создание списка объектов -глав
+                var chepterCount = ch.Length;
                 ch.Each(x =>
                 {
                     progressBar1.Value = urlCount;
@@ -1064,9 +1078,11 @@ namespace MangaDownloader
                         func_saver.filter_nowindows_symbols(manga_name),
                         $@"{sn} ({guid.ToString().Replace("-", string.Empty)})",
                         guid,
+                        chepterCount,
                       mangalib_ii
                     )); ;//добавление глав в лист arr_mang_inf
                     Found_parts.Items.Add(new MangaChapterCheckBoxItem($@"{sn}", guid), true);//добавление глав в chekbox found_parts
+                    chepterCount--;
                 });
 
                 About_found.Text = $@"Найдено глав: {ch.Length}";//количество найденых глав
@@ -1103,7 +1119,7 @@ namespace MangaDownloader
                 progressBar1.Maximum = ch.Length;
                 progressBar1.Value = 0;
                 status.Text = "Получение списка глав со всеми страницами";
-
+                var chepterCount = ch.Length;
                 ch.Each(x =>
                 {
                     progressBar1.Value = urlCount;
@@ -1115,9 +1131,11 @@ namespace MangaDownloader
                         func_saver.filter_nowindows_symbols(manga_name),
                         $@"{sn} ({guid.ToString().Replace("-", string.Empty)})",
                         guid,
+                        chepterCount,
                         bato_ii
                     )); ;//добавление глав в лист arr_mang_inf
                     Found_parts.Items.Add(new MangaChapterCheckBoxItem($@"{sn}", guid), true);//добавление глав в chekbox found_parts
+                    chepterCount--;
                 });
 
                 About_found.Text = $@"Найдено глав: {ch.Length}";//количество найденых глав
@@ -1154,6 +1172,7 @@ namespace MangaDownloader
         public string name;//название корневой папки
         public string sub_name;//название главы для папки
         public Guid id;// id главы
+        public int chapterNumber;// номер в списке
 
         public List<img_info> imageInfo
         {
@@ -1172,13 +1191,14 @@ namespace MangaDownloader
         private Func<string, string, Guid, List<img_info>> getImgInfoList;
         private List<img_info> _imageInfo;
 
-        public manga_info(string l, string n, string sn, Guid i, Func<string, string, Guid, List<img_info>> g)
+        public manga_info(string l, string n, string sn, Guid i, int c, Func<string, string, Guid, List<img_info>> g)
         {
             link = l;
             name = n;
             sub_name = sn;
             id = i;
-            getImgInfoList=g;
+            chapterNumber = c;
+            getImgInfoList =g;
         }
     }
 
@@ -1244,6 +1264,8 @@ namespace MangaDownloader
             str = str.Replace(@"\", " ");
             str = str.Replace(@"/", " ");
             str = str.Replace(@"'", " ");
+            str = str.Replace("\n", string.Empty);
+            str=new Regex("[ ]{2,}").Replace(str, " ");
             return str;
         }
 
