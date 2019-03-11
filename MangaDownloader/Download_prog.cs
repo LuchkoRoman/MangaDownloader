@@ -5,6 +5,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -13,6 +14,7 @@ using System.Windows.Forms;
 using CsQuery;
 using CsQuery.ExtensionMethods;
 using Ionic.Zip;
+using MangaDownloader.CloudFlare;
 using MangaDownloader.Properties;
 
 namespace MangaDownloader
@@ -359,27 +361,35 @@ namespace MangaDownloader
         {
            
             List<img_info> img_info_list= new List<img_info>();
-            var  HTML_str = func_saver.get_HTML($@"{ch_url}?mtr=1"); //получить html
-
-
-            Regex pattern = new Regex(@"rm_h\.init.*\]");
-            List<string> urlList = pattern.Match(HTML_str)
-                .Value.Split(new[] { "],[" }, StringSplitOptions.None).Select(u =>
-                      (new Regex(@"http.*\""")).Match(u).Value.Replace("',", string.Empty)
-                      .Replace("\"", string.Empty)).ToList();
-
-            var count_page = 1;
-
-            urlList.ForEach(url =>
+            try
             {
-                var ext = url.Substring(url.LastIndexOf('.'));
-                ext = ext.Contains('?') ? ext.Remove(ext.IndexOf('?')) : ext;
+                var HTML_str = func_saver.get_HTML($@"{ch_url}?mtr=1"); //получить html
 
-                img_info_list.Add(new img_info($"{func_saver.convert_number_page(count_page)}{ext}",
-                    url,ch_id,Guid.NewGuid()));
 
-                count_page++;
-            });
+                Regex pattern = new Regex(@"rm_h\.init.*\]");
+                List<string> urlList = pattern.Match(HTML_str)
+                    .Value.Split(new[] {"],["}, StringSplitOptions.None).Select(u =>
+                        (new Regex(@"http.*\""")).Match(u).Value.Replace("',", string.Empty)
+                        .Replace("\"", string.Empty)).ToList();
+
+                var count_page = 1;
+
+                urlList.ForEach(url =>
+                {
+                    if (string.IsNullOrWhiteSpace(url)) return;
+                    var ext = url.Substring(url.LastIndexOf('.'));
+                    ext = ext.Contains('?') ? ext.Remove(ext.IndexOf('?')) : ext;
+
+                    img_info_list.Add(new img_info($"{func_saver.convert_number_page(count_page)}{ext}",
+                        url, ch_id, Guid.NewGuid()));
+
+                    count_page++;
+                });
+            }
+            catch (Exception ex)
+            {
+
+            }
 
             return img_info_list;
         }
@@ -389,27 +399,36 @@ namespace MangaDownloader
         {
 
             List<img_info> img_info_list = new List<img_info>();
-
-            var  HTML_str = func_saver.get_HTML(ch_url); //получить html
-
-            var imageFolderUrl = new Regex(@"("".*"")")
-                .Match(new Regex(@"(dir.*/"")").Match(HTML_str).Value).Value
-                .Replace("\"", string.Empty);
-
-            Regex pattern = new Regex(@"(images:.*\],\])");
-            var imgList = pattern.Match(HTML_str)
-                .Value.Split(new[] { "],[" }, StringSplitOptions.None).Select(im =>
-                    (new Regex(@"("".*"")")).Match(im).Value.Replace("\"", string.Empty)).ToList();
-
-            var count_page = 1;
-
-            imgList.ForEach(im =>
+            try
             {
-                img_info_list.Add(new img_info($"{func_saver.convert_number_page(count_page)}{im.Substring(im.LastIndexOf('.'))}",
-                    $@"https://manga24.ru/{imageFolderUrl}{im}", ch_id, Guid.NewGuid()));
+                var HTML_str = func_saver.get_HTML(ch_url); //получить html
 
-                count_page++;
-            });
+                var imageFolderUrl = new Regex(@"("".*"")")
+                    .Match(new Regex(@"(dir.*/"")").Match(HTML_str).Value).Value
+                    .Replace("\"", string.Empty);
+
+                Regex pattern = new Regex(@"(images:.*\],\])");
+                var imgList = pattern.Match(HTML_str)
+                    .Value.Split(new[] {"],["}, StringSplitOptions.None).Select(im =>
+                        (new Regex(@"("".*"")")).Match(im).Value.Replace("\"", string.Empty)).ToList();
+
+                var count_page = 1;
+
+                imgList.ForEach(im =>
+                {
+                    if (string.IsNullOrWhiteSpace(im)) return;
+                    img_info_list.Add(new img_info(
+                        $"{func_saver.convert_number_page(count_page)}{im.Substring(im.LastIndexOf('.'))}",
+                        $@"https://manga24.ru/{imageFolderUrl}{im}", ch_id, Guid.NewGuid()));
+
+                    count_page++;
+                });
+
+            }
+            catch (Exception ex)
+            {
+
+            }
 
             return img_info_list;
         }
@@ -421,6 +440,7 @@ namespace MangaDownloader
 
             List<img_info> img_info_list = new List<img_info>();
 
+            try { 
             var  HTML_str = func_saver.get_HTML(ch_url); //получить html
 
             Regex pattern = new Regex(@"(""fullimg"":.*"")");
@@ -433,12 +453,18 @@ namespace MangaDownloader
 
             urlList.ForEach(url =>
             {
+                if (string.IsNullOrWhiteSpace(url)) return;
                 img_info_list.Add(new img_info(
                     $"{func_saver.convert_number_page(count_page)}{url.Substring(url.LastIndexOf('.'))}",
                     url, ch_id, Guid.NewGuid()));
 
                 count_page++;
             });
+            }
+            catch (Exception ex)
+            {
+
+            }
 
             return img_info_list;
         }
@@ -448,7 +474,7 @@ namespace MangaDownloader
         {
 
             List<img_info> img_info_list = new List<img_info>();
-
+            try { 
             var  HTML_str = func_saver.get_HTML(ch_url); //получить html
 
             Regex pattern = new Regex(@"(""fullimg"":.*"")");
@@ -461,12 +487,18 @@ namespace MangaDownloader
 
             urlList.ForEach(url =>
             {
+                if (string.IsNullOrWhiteSpace(url)) return;
                 img_info_list.Add(new img_info(
                     $"{func_saver.convert_number_page(count_page)}{url.Substring(url.LastIndexOf('.'))}",
                     url, ch_id, Guid.NewGuid()));
 
                 count_page++;
             });
+            }
+            catch (Exception ex)
+            {
+
+            }
 
             return img_info_list;
         }
@@ -476,7 +508,8 @@ namespace MangaDownloader
         {
 
             List<img_info> img_info_list = new List<img_info>();
-
+            try
+            {            
             var  HTML_str = func_saver.get_HTML(ch_url); //получить html
 
             Regex pattern = new Regex(@"(""fullimg"":.*"")");
@@ -489,13 +522,18 @@ namespace MangaDownloader
 
             urlList.ForEach(url =>
             {
+                if (string.IsNullOrWhiteSpace(url)) return;
                 img_info_list.Add(new img_info(
                     $"{func_saver.convert_number_page(count_page)}{url.Substring(url.LastIndexOf('.'))}",
                     url, ch_id, Guid.NewGuid()));
 
                 count_page++;
             });
+            }
+            catch (Exception ex)
+            {
 
+            }
             return img_info_list;
         }
 
@@ -505,51 +543,62 @@ namespace MangaDownloader
         {
 
             List<img_info> img_info_list = new List<img_info>();
-
-            var  HTML_str = func_saver.get_HTML(ch_url); //получить html
-
-            var imageFolderUrl = new Regex(@"('.*')")
-                .Match(new Regex(@"(imgUrl:.*',)").Match(HTML_str).Value).Value
-                .Replace("'", string.Empty);
-            var imageServer = new Regex(@"('.*')")
-                .Match(new Regex(@"(imgServer:.*')").Match(HTML_str).Value).Value
-                .Replace("'", string.Empty);
-
-            var imageServerUrl = "https://img1.mangalib.me";
-
-            switch (imageServer)
+            try
             {
-                case "main":
+                var HTML_str = func_saver.get_HTML(ch_url); //получить html
+
+                var imageFolderUrl = new Regex(@"('.*')")
+                    .Match(new Regex(@"(imgUrl:.*',)").Match(HTML_str).Value).Value
+                    .Replace("'", string.Empty);
+                var imageServer = new Regex(@"('.*')")
+                    .Match(new Regex(@"(imgServer:.*')").Match(HTML_str).Value).Value
+                    .Replace("'", string.Empty);
+
+                var imageServerUrl = "https://img1.mangalib.me";
+
+                switch (imageServer)
                 {
-                    imageServerUrl = "https://img1.mangalib.me";
-                    break;
+                    case "main":
+                    {
+                        imageServerUrl = "https://img1.mangalib.me";
+                        break;
+                    }
+                    case "secondary":
+                    {
+                        imageServerUrl = "https://img2.mangalib.me";
+                        break;
+                    }
+                    default:
+                    {
+                        imageServerUrl = "https://img2.mangalib.me";
+                        break;
+                    }
                 }
-                case "secondary":
+
+                Regex pattern = new Regex(@"pages:.*\]");
+                var imgList = pattern.Match(HTML_str)
+                    .Value.Split(new[] {"},{"}, StringSplitOptions.None).Select(im =>
+                        new Regex(@"("".*"")")
+                            .Match(im.Remove(im.IndexOf(',')).Replace(@"""page_image"":", string.Empty)).Value
+                            .Replace("\"", string.Empty)).ToList();
+
+
+                var count_page = 1;
+
+                imgList.ForEach(im =>
                 {
-                    imageServerUrl = "https://img2.mangalib.me";
-                    break;
-                }
-                default:
-                {
-                    imageServerUrl = "https://img2.mangalib.me";
-                    break;
-                }
+                    if (string.IsNullOrWhiteSpace(im)) return;
+                    img_info_list.Add(new img_info(
+                        $"{func_saver.convert_number_page(count_page)}{im.Substring(im.LastIndexOf('.'))}",
+                        $@"{imageServerUrl}{imageFolderUrl}{im}", ch_id, Guid.NewGuid()));
+
+                    count_page++;
+                });
             }
-
-            Regex pattern = new Regex(@"pages:.*\]");
-            var imgList = pattern.Match(HTML_str)
-                .Value.Split(new[] { "},{" }, StringSplitOptions.None).Select(im => new Regex(@"("".*"")").Match(im.Remove(im.IndexOf(',')).Replace(@"""page_image"":", string.Empty)).Value.Replace("\"", string.Empty)).ToList();
-
-
-            var count_page = 1;
-
-            imgList.ForEach(im =>
+            catch (Exception ex)
             {
-                img_info_list.Add(new img_info(
-                    $"{func_saver.convert_number_page(count_page)}{im.Substring(im.LastIndexOf('.'))}", $@"{imageServerUrl}{imageFolderUrl}{im}", ch_id, Guid.NewGuid()));
 
-                count_page++;
-            });
+            }
 
             return img_info_list;
         }
@@ -559,7 +608,7 @@ namespace MangaDownloader
         {
 
             List<img_info> img_info_list = new List<img_info>();
-
+            try { 
             var  HTML_str = func_saver.get_HTML(ch_url); //получить html
 
             Regex pattern = new Regex(@"(var images =.*""};)");
@@ -572,18 +621,54 @@ namespace MangaDownloader
 
             urlList.ForEach(url =>
             {
+                if (string.IsNullOrWhiteSpace(url)) return;
                 img_info_list.Add(new img_info(
                     $"{func_saver.convert_number_page(count_page)}{url.Substring(url.LastIndexOf('.'))}",
                     url, ch_id, Guid.NewGuid()));
 
                 count_page++;
             });
+            }
+            catch (Exception ex)
+            {
 
+            }
             return img_info_list;
         }
 
 
+        public List<img_info> mangago_ii(string ch_name, string ch_url, Guid ch_id)
+        {
 
+            List<img_info> img_info_list = new List<img_info>();
+            //try
+            //{
+            //    var HTML_str = func_saver.get_HTML(ch_url); //получить html
+
+            //    Regex pattern = new Regex(@"(var images =.*""};)");
+
+            //    List<string> urlList = pattern.Match(HTML_str)
+            //        .Value.Split(new[] { "," }, StringSplitOptions.None).Select(u =>
+            //            (new Regex(@"(""http.*"")")).Match(u).Value.Replace("\"", string.Empty)).ToList();
+
+            //    var count_page = 1;
+
+            //    urlList.ForEach(url =>
+            //    {
+            //        if (string.IsNullOrWhiteSpace(url)) return;
+            //        img_info_list.Add(new img_info(
+            //            $"{func_saver.convert_number_page(count_page)}{url.Substring(url.LastIndexOf('.'))}",
+            //            url, ch_id, Guid.NewGuid()));
+
+            //        count_page++;
+            //    });
+            //}
+            //catch (Exception ex)
+            //{
+
+            //}
+            return img_info_list;
+        }
 
 
         //вывод информации при загрузке
@@ -694,6 +779,9 @@ namespace MangaDownloader
                 if (site_link.Contains("bato.to"))
                     bato_searchparts(site_link);
 
+                //if (site_link.Contains("mangago.me"))
+                //    mangago_searchparts(site_link);
+
             }
             catch (Exception ex)
             {
@@ -725,39 +813,39 @@ namespace MangaDownloader
         //поиск глав
         public void readmanga_searchparts(string site_link)
         {
-            {
 
                 //логика поиска глав mintmanga, readmanga и selfmanga
 
-                string sn;//название для папки главы
-                string ch_url;//url главы
-                Guid guid;// id главы        
+                string sn; //название для папки главы
+                string ch_url; //url главы
+                Guid guid; // id главы        
                 int urlCount = 1;
 
-                var  HTML_str = func_saver.get_HTML(site_link);//получение кода страницы
+                var HTML_str = func_saver.get_HTML(site_link); //получение кода страницы
                 status.Text = "Статус ОК";
                 status.ForeColor = Color.Green;
 
 
-                var dom = CQ.Create(HTML_str);//воссаздаем html страницу из полученного ответа от сервера
+                var dom = CQ.Create(HTML_str); //воссаздаем html страницу из полученного ответа от сервера
                 var manga_name = dom[".names .name"].Text().Trim();
                 global_name = manga_name;
-                var ch = dom[".chapters-link a[href]"];// получаем все элементы с url и названием глав
-                ch.Children().Remove();// удаляем ненужные тэги типа "новое" из названия глав
+                var ch = dom[".chapters-link a[href]"]; // получаем все элементы с url и названием глав
+                ch.Children().Remove(); // удаляем ненужные тэги типа "новое" из названия глав
 
                 //настройка прогресбара progressBar1
                 progressBar1.Maximum = ch.Length;
                 progressBar1.Value = 0;
 
                 status.Text = "Получение списка глав со всеми страницами";
-                arr_mang_inf = new List<manga_info>();//создание списка объектов -глав
+                arr_mang_inf = new List<manga_info>(); //создание списка объектов -глав
                 var chepterCount = ch.Length;
                 ch.Each(x =>
                 {
                     progressBar1.Value = urlCount;
                     urlCount++;
                     guid = Guid.NewGuid();
-                    sn = func_saver.filter_nowindows_symbols(x.InnerText.Replace(manga_name, string.Empty).Trim());// удаляем лишние пробелы и имя манги из названия главы
+                    sn = func_saver.filter_nowindows_symbols(x.InnerText.Replace(manga_name, string.Empty)
+                        .Trim()); // удаляем лишние пробелы и имя манги из названия главы
                     ch_url = $@"{site_link}{x["href"].Substring(x["href"].IndexOf("/", 1, StringComparison.Ordinal))}";
                     arr_mang_inf.Add(new manga_info(ch_url,
                         func_saver.filter_nowindows_symbols(manga_name),
@@ -765,23 +853,26 @@ namespace MangaDownloader
                         guid,
                         chepterCount,
                         readmanga_ii
-                        )); ;//добавление глав в лист arr_mang_inf
+                    ));
+                    ; //добавление глав в лист arr_mang_inf
                     chepterCount--;
-                    Found_parts.Items.Add(new MangaChapterCheckBoxItem($@"{sn}", guid), true);//добавление глав в chekbox found_parts
+                    Found_parts.Items.Add(new MangaChapterCheckBoxItem($@"{sn}", guid),
+                        true); //добавление глав в chekbox found_parts
                 });
 
-                About_found.Text = $@"Найдено глав: {ch.Length}";//количество найденых глав
+                About_found.Text = $@"Найдено глав: {ch.Length}"; //количество найденых глав
                 MangaNameLbl.Text = $@"{manga_name}";
                 progressBar1.Maximum = 0;
                 progressBar1.Value = 0;
                 status.Text = "Статус ОК. Закачка не производится";
 
 
-            }//конец readmanga, minitmanga, и selfmanga
+            //конец readmanga, minitmanga, и selfmanga
+
         }
         public void manga24_searchparts(string site_link)
         {
-            {
+           
                 string sn;//название для папки главы
                 string ch_url;//url главы
                 Guid guid;// id главы        
@@ -829,11 +920,12 @@ namespace MangaDownloader
                 progressBar1.Value = 0;
                 status.Text = "Статус ОК. Закачка не производится";
 
-            }//конец manga24
+            //конец manga24
+
         }
         public void mangachan_searchparts(string site_link)
         {
-            {
+        
                 string sn;//название для папки главы
                 string ch_url;//url главы
                 Guid guid;// id главы        
@@ -882,13 +974,13 @@ namespace MangaDownloader
                 status.Text = "Статус ОК. Закачка не производится";
 
 
-            }//конец mangachan
+            //конец mangachan
+
         }
 
        
         public void hchan_searchparts(string site_link)
         {
-            {
 
                 site_link = !site_link.Contains(@"/manga/")
                     ? $@"http://hentai-chan.me/manga{site_link.Substring(site_link.LastIndexOf('/'))}"
@@ -1009,12 +1101,13 @@ namespace MangaDownloader
                 progressBar1.Value = 0;
                 status.Text = "Статус ОК. Закачка не производится";
 
-            }//конец hentaichan
+            //конец hentaichan
+
         }
 
         public void yachan_searchparts(string site_link)
         {
-            {
+
                 string sn;//название для папки главы
                 string ch_url;//url главы
                 Guid guid;// id главы        
@@ -1063,13 +1156,12 @@ namespace MangaDownloader
                 status.Text = "Статус ОК. Закачка не производится";
 
 
-            }//конец mangachan
+            //конец mangachan
+
         }
 
         public void mangalib_searchparts(string site_link)
         {
-            {
-
                 //логика поиска глав mangalib
 
                 string sn;//название для папки главы
@@ -1122,12 +1214,12 @@ namespace MangaDownloader
                 status.Text = "Статус ОК. Закачка не производится";
 
 
-            }//конец mangalib
+            //конец mangalib
+            
         }
 
         public void bato_searchparts(string site_link)
         {
-            {
                 //логика поиска глав bato.to
 
                 string sn;//название для папки главы
@@ -1177,7 +1269,63 @@ namespace MangaDownloader
                 progressBar1.Value = 0;
                 status.Text = "Статус ОК. Закачка не производится";
 
-            }//конец bato.to
+            //конец bato.to
+
+        }
+
+        public void mangago_searchparts(string site_link)
+        {
+                //логика поиска глав mangago.me
+
+                string sn;//название для папки главы
+                string ch_url;//url главы
+                Guid guid;// id главы 
+                int urlCount = 1;
+
+                var HTML_str = func_saver.get_HTML(site_link);//получение кода страницы
+                status.Text = "Статус ОК";
+                status.ForeColor = Color.Green;
+
+
+                var dom = CQ.Create(HTML_str);//воссаздаем html страницу из полученного ответа от сервера
+                var manga_name = dom[".w-title h1"].Text().Trim();
+                global_name = manga_name;//получение название манги для корневой папки
+                var ch = dom["#chapter_table a[href]"];// получаем все элементы с url и названием глав
+                //ch.Children().Remove();// удаляем ненужные тэги типа "новое" из названия глав
+
+                arr_mang_inf = new List<manga_info>();//создание списка объектов -глав
+
+                //настройка прогресбара progressBar1
+                progressBar1.Maximum = ch.Length;
+                progressBar1.Value = 0;
+                status.Text = "Получение списка глав со всеми страницами";
+                var chepterCount = ch.Length;
+                ch.Each(x =>
+                {
+                    progressBar1.Value = urlCount;
+                    urlCount++;
+                    guid = Guid.NewGuid();
+                    sn = func_saver.filter_nowindows_symbols(x.InnerText.Trim());// удаляем лишние пробелы и имя манги из названия главы
+                    ch_url = x["href"];
+                    arr_mang_inf.Add(new manga_info(ch_url,
+                        func_saver.filter_nowindows_symbols(manga_name),
+                        $@"{sn} ({guid.ToString().Replace("-", string.Empty)})",
+                        guid,
+                        chepterCount,
+                        mangago_ii
+                    )); ;//добавление глав в лист arr_mang_inf
+                    Found_parts.Items.Add(new MangaChapterCheckBoxItem($@"{sn}", guid), true);//добавление глав в chekbox found_parts
+                    chepterCount--;
+                });
+
+                About_found.Text = $@"Найдено глав: {ch.Length}";//количество найденых глав
+                MangaNameLbl.Text = $@"{manga_name}";
+                progressBar1.Maximum = 0;
+                progressBar1.Value = 0;
+                status.Text = "Статус ОК. Закачка не производится";
+
+            //конец mangago.me
+
         }
 
         public static void DeleteDirectory(string target_dir)
@@ -1288,6 +1436,8 @@ namespace MangaDownloader
 
     public class Func_saver//сюда будут писаться всякие функции
     {
+        CookieContainer cookie_container = new CookieContainer();
+
         //фильтрация строк на символы, запрещеныне windows
         public string filter_nowindows_symbols( string str)
         {
@@ -1347,49 +1497,110 @@ namespace MangaDownloader
 
         }
 
+        public static bool IsCloudflare(HttpWebResponse response)
+        {
+            //Error 503 Service Unavailable cloudflare
+            return response.StatusCode == HttpStatusCode.ServiceUnavailable && (response.Server == "cloudflare-nginx" || response.Server == "cloudflare");
+        }
+
         //получение html кода
         public string get_HTML(string url)
         {
             string html_str;
 
-            using (WebClient wc = new WebClient())
-            {
-                IWebProxy wp = WebRequest.DefaultWebProxy;
-                wp.Credentials = CredentialCache.DefaultCredentials;
-                wc.Proxy = wp;
-                wc.Headers.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.2526.73 Safari/537.36");
-                html_str = Encoding.UTF8.GetString(wc.DownloadData(url));
-                return html_str;
-            }
-
-            //HttpWebRequest req = (HttpWebRequest)HttpWebRequest.Create(url);//запрос
-
-            //var proxy = req.Proxy;
-            //if (proxy != null)
+            //using (WebClient wc = CloudflareEvader.CreateBypassedWebClient(url, out html_str))
             //{
-            //    string proxyuri = proxy.GetProxy(req.RequestUri).ToString();
-            //    req.UseDefaultCredentials = true;
-            //    req.Proxy = new WebProxy(proxyuri, false);
-            //    req.Proxy.Credentials = System.Net.CredentialCache.DefaultCredentials;
+            //    if (string.IsNullOrWhiteSpace(html_str))
+            //        html_str = Encoding.UTF8.GetString(wc.DownloadData(url));
+            //    return html_str;
             //}
 
-            //req.UserAgent = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.2526.73 Safari/537.36";
+            try
+            {
+                using (WebClient wc = new WebClientEx(cookie_container))
+                {
+                    html_str = Encoding.UTF8.GetString(wc.DownloadData(url));
+                    return html_str;
+                }
 
-            //HttpWebResponse resp = (HttpWebResponse)req.GetResponse();//ответ
-            //StreamReader stream = new StreamReader(resp.GetResponseStream(), Encoding.UTF8);//созданеи потока для получения ответа, перекодтровать в utf8
-            //html_str = stream.ReadToEnd();//слушать ответ до конца
-            //return html_str;
-        }
+            }
+            catch (WebException exc) //We usually get this because of a 503 service not available.
+            {
+                HttpWebResponse error = (HttpWebResponse) exc.Response;
+                if (!IsCloudflare(error))
+                    throw exc;
+
+                try
+                {
+                    // Create the clearance handler.
+                    var handler = new ClearanceHandler
+                    {
+                        MaxRetries = 4, // Optionally specify the number of retries, if clearance fails (default is 3).
+                        Cookies = cookie_container
+                    };
+
+                    // Create a HttpClient that uses the handler to bypass CloudFlare's JavaScript challange.
+                    var client = new HttpClient(handler);
+                    // Use the HttpClient as usual. Any JS challenge will be solved automatically for you.
+                    html_str = client.GetStringAsync(url).Result;
+                    cookie_container =  handler.Cookies;
+                    return html_str;
+                }
+                catch (AggregateException ex) when (ex.InnerException is CloudFlareClearanceException)
+                {
+                    // After all retries, clearance still failed.
+                    throw ex;
+                }
+                catch (AggregateException ex) when (ex.InnerException is TaskCanceledException)
+                {
+                    // Looks like we ran into a timeout. Too many clearance attempts?
+                    // Maybe you should increase client.Timeout as each attempt will take about five seconds.
+                    throw ex;
+                }
+            }
+
+            //using (WebClient wc = new WebClient())
+                //{
+                //    IWebProxy wp = WebRequest.DefaultWebProxy;
+                //    wp.Credentials = CredentialCache.DefaultCredentials;
+                //    wc.Proxy = wp;
+                //    wc.Headers.Add("user-agent",
+                //        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.109 Safari/537.36");
+
+                //    html_str = Encoding.UTF8.GetString(wc.DownloadData(url));
+                //    return html_str;
+                //}
+
+
+
+                //HttpWebRequest req = (HttpWebRequest) HttpWebRequest.Create(url); //запрос
+
+                //var proxy = req.Proxy;
+                //if (proxy != null)
+                //{
+                //    string proxyuri = proxy.GetProxy(req.RequestUri).ToString();
+                //    req.UseDefaultCredentials = true;
+                //    req.Proxy = new WebProxy(proxyuri, false);
+                //    req.Proxy.Credentials = System.Net.CredentialCache.DefaultCredentials;
+                //}
+
+                //req.UserAgent =
+                //    "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.2526.73 Safari/537.36";
+
+                //HttpWebResponse resp = (HttpWebResponse) req.GetResponse(); //ответ
+                //StreamReader
+                //    stream = new StreamReader(resp.GetResponseStream(),
+                //        Encoding.UTF8); //созданеи потока для получения ответа, перекодтровать в utf8
+                //html_str = stream.ReadToEnd(); //слушать ответ до конца
+                //return html_str;
+
+            }
+
 
         public void downloadFile(string chUrl, string img_path)
         {
-            using (WebClient wc = new WebClient())
+            using (WebClient wc = new WebClientEx(cookie_container))
             {
-                IWebProxy wp = WebRequest.DefaultWebProxy;
-                wp.Credentials = CredentialCache.DefaultCredentials;
-                wc.Proxy = wp;
-                wc.Headers.Add("user-agent",
-                    "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.2526.73 Safari/537.36");
                 wc.DownloadFile(chUrl, img_path);
             }
         }
